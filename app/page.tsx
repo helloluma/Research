@@ -54,14 +54,14 @@ export default function Home() {
     if (!timestamp) return 'Never';
     const date = new Date(timestamp);
     return date.toLocaleString('en-US', {
-      timeZone: 'America/Chicago',
+      timeZone: 'America/Denver',
       weekday: 'short',
       month: 'short',
       day: 'numeric',
       hour: 'numeric',
       minute: '2-digit',
       hour12: true,
-    }) + ' CT';
+    }) + ' MST';
   }
 
   return (
@@ -166,7 +166,7 @@ export default function Home() {
               <div>
                 <h3 className="font-semibold text-zinc-100">Morning Full Digest</h3>
                 <p className="text-zinc-400 text-sm mt-1">
-                  6:30 AM CT - Complete research with all queries, Reddit pain points,
+                  6:30 AM MST - Complete research with all queries, Reddit pain points,
                   trending blog topics, and urgent items highlighted
                 </p>
                 <p className="text-zinc-500 text-sm mt-2">
@@ -182,7 +182,7 @@ export default function Home() {
               <div>
                 <h3 className="font-semibold text-zinc-100">Evening Catch-Up</h3>
                 <p className="text-zinc-400 text-sm mt-1">
-                  8:00 PM CT - Quick scan for NEW urgent items since morning.
+                  8:00 PM MST - Quick scan for NEW urgent items since morning.
                   Only sends email if new items found.
                 </p>
                 <p className="text-zinc-500 text-sm mt-2">

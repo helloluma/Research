@@ -1,14 +1,16 @@
 /**
  * Evening Catch-Up Cron Job
- * Runs at 8:00pm CT (2:00am UTC next day)
+ * Runs at 8:00pm MST (3:00am UTC next day)
  *
  * Quick scan for NEW urgent items since morning.
  * Only sends email if new urgent items are found.
+ *
+ * Uses custom email template (no ChatGPT - saves ~$0.10/run)
  */
 
 import { NextResponse } from 'next/server';
 import { processQueries, isUrgentResult } from '@/lib/perplexity';
-import { formatEveningEmail, generateFallbackEmail } from '@/lib/openai';
+import { generateEveningCatchupEmail } from '@/lib/emailTemplate';
 import { sendEveningCatchup } from '@/lib/resend';
 import {
   loadMorningUrgentItems,
@@ -17,7 +19,7 @@ import {
   extractUrgentItems,
 } from '@/lib/urgentTracker';
 import { getEveningQueries } from '@/lib/queries';
-import { CronJobResult, UrgentItem } from '@/types';
+import { CronJobResult } from '@/types';
 
 // Vercel cron security
 const CRON_SECRET = process.env.CRON_SECRET;
@@ -113,22 +115,10 @@ export async function GET(request: Request) {
       return NextResponse.json(result);
     }
 
-    // STEP 5: Format evening email
-    console.log('\n--- Step 5: Formatting Evening Email ---');
-    let htmlBody: string;
-
-    const { htmlBody: formattedHtml, error: formatError } = await formatEveningEmail(
-      newUrgentItems
-    );
-
-    if (formatError || !formattedHtml) {
-      console.warn(`Email formatting failed: ${formatError}`);
-      errors.push(`Email format error: ${formatError}`);
-      // Use fallback
-      htmlBody = generateFallbackEveningEmail(newUrgentItems);
-    } else {
-      htmlBody = formattedHtml;
-    }
+    // STEP 5: Generate evening email with custom template (no ChatGPT!)
+    console.log('\n--- Step 5: Generating Evening Email (Custom Template) ---');
+    const htmlBody = generateEveningCatchupEmail(newUrgentItems);
+    console.log('Email generated successfully using custom template');
 
     // STEP 6: Send email
     console.log('\n--- Step 6: Sending Evening Email ---');
@@ -177,34 +167,4 @@ export async function GET(request: Request) {
 
     return NextResponse.json(result, { status: 500 });
   }
-}
-
-/**
- * Simple fallback email for evening when OpenAI fails
- */
-function generateFallbackEveningEmail(items: UrgentItem[]): string {
-  return `
-<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; color: #333; line-height: 1.6;">
-  <div style="background: #fff3cd; border: 1px solid #ffc107; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
-    <strong>Evening Catch-Up Alert</strong> - ${items.length} new urgent item${items.length !== 1 ? 's' : ''} since this morning
-  </div>
-
-  <div style="background: #f8d7da; border: 1px solid #f5c6cb; padding: 10px; border-radius: 5px; margin-bottom: 20px; font-size: 14px;">
-    Note: Email formatting failed. Showing raw data.
-  </div>
-
-  ${items.map(item => `
-    <div style="border-left: 3px solid ${item.priority === 'urgent' ? '#dc3545' : '#ffc107'}; padding-left: 15px; margin-bottom: 20px;">
-      <h3 style="margin: 0 0 10px 0;">[${item.project.toUpperCase()}] ${item.priority.toUpperCase()}</h3>
-      <p style="margin: 0 0 10px 0;">${item.summary}</p>
-      ${item.source ? `<a href="${item.source}" style="color: #007bff;">View Source</a>` : ''}
-    </div>
-  `).join('')}
-
-  <hr style="margin: 30px 0; border: none; border-top: 1px solid #ddd;">
-  <p style="color: #666; font-size: 14px;">
-    Generated at ${new Date().toLocaleString('en-US', { timeZone: 'America/Chicago' })} CT
-  </p>
-</div>
-  `.trim();
 }

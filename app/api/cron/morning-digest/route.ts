@@ -1,17 +1,19 @@
 /**
  * Morning Digest Cron Job
- * Runs at 6:30am CT (12:30pm UTC)
+ * Runs at 6:30am MST (13:30pm UTC)
  *
  * Full research digest including:
  * - All project queries
  * - Reddit pain points with quotes
  * - Trending blog topics with duplicate checking
  * - Urgent items highlighted at top
+ *
+ * Uses custom email template (no ChatGPT - saves ~$0.50/run)
  */
 
 import { NextResponse } from 'next/server';
 import { processQueries, getTrendingBlogTopics } from '@/lib/perplexity';
-import { formatMorningEmail, generateFallbackEmail } from '@/lib/openai';
+import { generateMorningDigestEmail } from '@/lib/emailTemplate';
 import { sendMorningDigest, sendErrorNotification } from '@/lib/resend';
 import { checkAllBlogs, checkTopicsForDuplicates } from '@/lib/blogChecker';
 import {
@@ -128,26 +130,14 @@ export async function GET(request: Request) {
       console.warn(errorMsg);
     }
 
-    // STEP 6: Format email with ChatGPT
-    console.log('\n--- Step 6: Formatting Email ---');
-    let htmlBody: string;
-
-    const { htmlBody: formattedHtml, error: formatError } = await formatMorningEmail(
+    // STEP 6: Generate email with custom template (no ChatGPT!)
+    console.log('\n--- Step 6: Generating Email (Custom Template) ---');
+    const htmlBody = generateMorningDigestEmail(
       findings,
       blogTopics,
       blogCheckResults
     );
-
-    if (formatError || !formattedHtml) {
-      console.warn(`Email formatting failed: ${formatError}`);
-      errors.push(`Email format error: ${formatError}`);
-      // Use fallback formatting
-      htmlBody = generateFallbackEmail(findings, 'morning');
-      console.log('Using fallback email format');
-    } else {
-      htmlBody = formattedHtml;
-      console.log('Email formatted successfully');
-    }
+    console.log('Email generated successfully using custom template');
 
     // STEP 7: Send email via Resend
     console.log('\n--- Step 7: Sending Email ---');

@@ -1,13 +1,14 @@
 # Research Automation System
 
-Automated daily research digests for SponsorBase, Luma Comply, and Marina Real Estate projects.
+Automated daily research digests for SponsorBase and Luma Comply projects.
 
 ## Features
 
-- **Morning Full Digest (6:30am CT)**: Complete research including competitor intel, Reddit pain points, trending blog topics with duplicate checking, and urgent items highlighted
-- **Evening Catch-Up (8pm CT)**: Quick scan for NEW urgent items since morning - only sends email if new items found
+- **Morning Full Digest (6:30am MST)**: Complete research including competitor intel, Reddit pain points, trending blog topics with duplicate checking, and urgent items highlighted
+- **Evening Catch-Up (8pm MST)**: Quick scan for NEW urgent items since morning - only sends email if new items found
 - **Blog Duplicate Detection**: Automatically checks existing blog posts before recommending new topics
 - **Urgent Item Tracking**: Tracks urgent items between morning and evening runs to avoid duplicates
+- **Custom Email Templates**: Beautiful dark-themed emails generated locally (no external API needed)
 
 ## Tech Stack
 
@@ -15,7 +16,6 @@ Automated daily research digests for SponsorBase, Luma Comply, and Marina Real E
 - TypeScript
 - Vercel Cron Jobs
 - Perplexity API (sonar-pro model)
-- OpenAI API (gpt-4o)
 - Resend API
 - Vercel KV (optional, for urgent item tracking)
 
@@ -41,7 +41,6 @@ Required environment variables:
 | Variable | Description | Where to get it |
 |----------|-------------|-----------------|
 | `PERPLEXITY_API_KEY` | Perplexity API key for research queries | [perplexity.ai/settings/api](https://www.perplexity.ai/settings/api) |
-| `OPENAI_API_KEY` | OpenAI API key for email formatting | [platform.openai.com/api-keys](https://platform.openai.com/api-keys) |
 | `RESEND_API_KEY` | Resend API key for sending emails | [resend.com/api-keys](https://resend.com/api-keys) |
 
 Optional environment variables:
@@ -91,19 +90,19 @@ Cron jobs are configured in `vercel.json`:
   "crons": [
     {
       "path": "/api/cron/morning-digest",
-      "schedule": "30 12 * * *"
+      "schedule": "30 13 * * *"
     },
     {
       "path": "/api/cron/evening-catchup",
-      "schedule": "0 2 * * *"
+      "schedule": "0 3 * * *"
     }
   ]
 }
 ```
 
 Note: Cron schedules are in UTC:
-- `30 12 * * *` = 12:30pm UTC = 6:30am CT
-- `0 2 * * *` = 2:00am UTC = 8:00pm CT (previous day)
+- `30 13 * * *` = 1:30pm UTC = 6:30am MST
+- `0 3 * * *` = 3:00am UTC = 8:00pm MST
 
 ## Local Development
 
@@ -112,11 +111,13 @@ npm run dev
 ```
 
 Visit `http://localhost:3000` to see the status page.
+Visit `http://localhost:3000/preview` to preview email templates.
 
 ### Testing Endpoints
 
 - **Status**: `GET /api/status`
 - **Test Email**: `GET /api/test-email`
+- **Email Preview**: `GET /api/preview-email?type=morning` or `?type=evening`
 - **Morning Digest**: `GET /api/cron/morning-digest`
 - **Evening Catch-Up**: `GET /api/cron/evening-catchup`
 
@@ -130,15 +131,19 @@ Visit `http://localhost:3000` to see the status page.
         route.ts
       /evening-catchup   # Evening urgent-only catch-up
         route.ts
+    /preview-email       # Email template preview API
+      route.ts
     /status              # System status endpoint
       route.ts
     /test-email          # Test email endpoint
       route.ts
+  /preview               # Email preview page
+    page.tsx
   page.tsx               # Landing page with status
   layout.tsx
 /lib
   perplexity.ts          # Perplexity API wrapper
-  openai.ts              # OpenAI API wrapper
+  emailTemplate.ts       # Custom email template generator
   resend.ts              # Resend email wrapper
   queries.ts             # All search queries by project
   blogChecker.ts         # Blog duplicate checking
@@ -153,7 +158,7 @@ vercel.json              # Cron configuration
 Edit `/lib/queries.ts` to add, remove, or modify research queries.
 
 Queries are organized by:
-- **Project**: sponsorbase, luma, marina
+- **Project**: sponsorbase, luma
 - **Category**: competitor_intel, reddit_pain_points, regulatory_updates, market_intel
 - **Job type**: morning (full) vs evening (urgent-only)
 
@@ -172,9 +177,9 @@ const EMAIL_CONFIG = {
 ## Cost Estimates
 
 Approximate costs per run:
-- **Morning digest** (~30 Perplexity queries + 1 OpenAI call): ~$0.50-1.00
-- **Evening catch-up** (~7 Perplexity queries): ~$0.10-0.20
-- **Monthly total**: ~$20-40
+- **Morning digest** (~30 Perplexity queries): ~$0.30-0.50
+- **Evening catch-up** (~7 Perplexity queries): ~$0.07-0.15
+- **Monthly total**: ~$12-20
 
 ## Troubleshooting
 

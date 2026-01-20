@@ -20,16 +20,20 @@ const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 /**
  * Standard research prompt for morning digest queries
+ * Written in first person for Edward as a solo founder
  */
 function buildMorningPrompt(query: string): string {
   return `Research and summarize: ${query}
 
+Write your response in FIRST PERSON as if you're a research assistant briefing me directly.
+Use "I found", "I noticed", "You should", "Here's what I discovered" etc.
+
 Provide:
-1. Key findings (bullet points)
-2. Most important insight
+1. Key findings (bullet points, first person)
+2. Most important insight (what I need to know right now)
 3. SPECIFIC PAIN POINTS mentioned (exact quotes if possible)
 4. What solution are people asking for?
-5. Action items for a founder building in this space
+5. Action items I should take as a founder building in this space
 6. Priority level (low/medium/high/urgent)
 
 For Reddit results specifically:
@@ -37,34 +41,42 @@ For Reddit results specifically:
 - Capture emotional language (frustrated, nightmare, hate, wish)
 - Identify recurring complaints vs one-off issues
 
-Keep it concise and actionable.`;
+Keep it concise, actionable, and written directly to me.`;
 }
 
 /**
  * Evening urgent-focused prompt
+ * Written in first person
  */
 function buildEveningPrompt(query: string): string {
   return `Research: ${query}
 
 Is there any URGENT or BREAKING news from the last 12 hours?
 
+Write in FIRST PERSON as if briefing me directly.
+
 Respond with:
 1. Priority: URGENT / HIGH / NONE
-2. If URGENT/HIGH: One sentence summary
+2. If URGENT/HIGH: One sentence summary of what I need to know
 3. Source link
 
-If nothing urgent, just say 'No urgent updates.'`;
+If nothing urgent, just say 'I found no urgent updates.'`;
 }
 
 /**
  * Blog trending topics prompt
+ * Written in first person
  */
 function buildBlogTopicsPrompt(project: string, description: string): string {
-  return `What are trending topics this week for ${description}? Focus on topics with high search intent. List 5 specific blog post titles with target keywords in this format:
+  return `I need blog topic ideas for ${description}. What topics are trending this week that I should write about?
+
+Focus on topics with high search intent. Give me 5 specific blog post titles I should consider writing, with target keywords in this format:
 
 1. "[Blog Title]" - Keywords: keyword1, keyword2, keyword3
 2. "[Blog Title]" - Keywords: keyword1, keyword2, keyword3
-...and so on`;
+...and so on
+
+Write as if you're suggesting these directly to me.`;
 }
 
 /**
