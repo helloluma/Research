@@ -309,6 +309,7 @@ function extractSolutionRequests(text: string): string[] {
 
 /**
  * Process multiple queries with rate limiting
+ * Runs in parallel batches of 5 for speed
  */
 export async function processQueries(
   queries: ResearchQuery[],
@@ -316,23 +317,40 @@ export async function processQueries(
 ): Promise<{ findings: ResearchFinding[]; errors: string[] }> {
   const findings: ResearchFinding[] = [];
   const errors: string[] = [];
+  const BATCH_SIZE = 5;
 
-  for (let i = 0; i < queries.length; i++) {
-    const query = queries[i];
+  // Process queries in parallel batches
+  for (let i = 0; i < queries.length; i += BATCH_SIZE) {
+    const batch = queries.slice(i, i + BATCH_SIZE);
+    const batchNum = Math.floor(i / BATCH_SIZE) + 1;
+    const totalBatches = Math.ceil(queries.length / BATCH_SIZE);
 
-    try {
-      console.log(`Processing query ${i + 1}/${queries.length}: ${query.query.substring(0, 50)}...`);
-      const finding = await processQuery(query, isEvening);
-      findings.push(finding);
-    } catch (error) {
-      const errorMessage = `Failed to process query "${query.query}": ${error instanceof Error ? error.message : 'Unknown error'}`;
-      console.error(errorMessage);
-      errors.push(errorMessage);
+    console.log(`Processing batch ${batchNum}/${totalBatches} (queries ${i + 1}-${Math.min(i + BATCH_SIZE, queries.length)}/${queries.length})`);
+
+    const batchPromises = batch.map(async (query, idx) => {
+      try {
+        const finding = await processQuery(query, isEvening);
+        return { success: true, finding, query };
+      } catch (error) {
+        const errorMessage = `Failed: "${query.query.substring(0, 40)}...": ${error instanceof Error ? error.message : 'Unknown'}`;
+        return { success: false, error: errorMessage, query };
+      }
+    });
+
+    const results = await Promise.all(batchPromises);
+
+    for (const result of results) {
+      if (result.success && result.finding) {
+        findings.push(result.finding);
+      } else if (result.error) {
+        console.error(result.error);
+        errors.push(result.error);
+      }
     }
 
-    // Add delay between queries to avoid rate limiting (except for last query)
-    if (i < queries.length - 1) {
-      await delay(1000);
+    // Add delay between batches to avoid rate limiting (except for last batch)
+    if (i + BATCH_SIZE < queries.length) {
+      await delay(2000);
     }
   }
 
