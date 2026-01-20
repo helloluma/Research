@@ -15,6 +15,10 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Research Automation System",
   description: "Automated research digests for SponsorBase, Luma Comply, and Marina Real Estate",
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export default function RootLayout({
