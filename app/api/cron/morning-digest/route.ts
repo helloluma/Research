@@ -60,11 +60,10 @@ export async function GET(request: Request) {
 
     // STEP 2: Get trending blog topics
     console.log('\n--- Step 2: Getting Trending Blog Topics ---');
-    const projects: ProjectName[] = ['sponsorbase', 'luma', 'marina'];
-    const trendingTopics: Record<ProjectName, string[]> = {
+    const projects: ProjectName[] = ['sponsorbase', 'luma'];
+    const trendingTopics: Partial<Record<ProjectName, string[]>> = {
       sponsorbase: [],
       luma: [],
-      marina: [],
     };
 
     for (const project of projects) {
@@ -97,20 +96,15 @@ export async function GET(request: Request) {
 
     // STEP 4: Check topics for duplicates
     console.log('\n--- Step 4: Checking for Duplicate Topics ---');
-    const blogTopics: Record<ProjectName, BlogTopic[]> = {
+    const blogTopics: Partial<Record<ProjectName, BlogTopic[]>> = {
       sponsorbase: checkTopicsForDuplicates(
-        trendingTopics.sponsorbase,
+        trendingTopics.sponsorbase || [],
         'sponsorbase',
         blogCheckResults
       ),
       luma: checkTopicsForDuplicates(
-        trendingTopics.luma,
+        trendingTopics.luma || [],
         'luma',
-        blogCheckResults
-      ),
-      marina: checkTopicsForDuplicates(
-        trendingTopics.marina,
-        'marina',
         blogCheckResults
       ),
     };

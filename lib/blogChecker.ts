@@ -183,12 +183,14 @@ function isSimilarTopic(
  * Check all blogs and get existing posts
  */
 export async function checkAllBlogs(): Promise<BlogCheckResult[]> {
-  const projects: ProjectName[] = ['sponsorbase', 'luma', 'marina'];
+  const projects: ProjectName[] = ['sponsorbase', 'luma'];
   const results: BlogCheckResult[] = [];
 
   for (const project of projects) {
-    console.log(`Checking blog for ${project}: ${BLOG_URLS[project]}`);
-    const result = await fetchBlogPosts(project, BLOG_URLS[project]);
+    const blogUrl = BLOG_URLS[project];
+    if (!blogUrl) continue;
+    console.log(`Checking blog for ${project}: ${blogUrl}`);
+    const result = await fetchBlogPosts(project, blogUrl);
     results.push(result);
 
     // Add delay between requests

@@ -196,7 +196,7 @@ export default function Home() {
         {/* Projects */}
         <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-8">
           <h2 className="text-xl font-semibold mb-6">Tracked Projects</h2>
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-2">
             <div className="p-4 bg-zinc-800/50 rounded-lg">
               <h3 className="font-semibold text-zinc-100 mb-2">SponsorBase</h3>
               <p className="text-zinc-400 text-sm">
@@ -207,12 +207,6 @@ export default function Home() {
               <h3 className="font-semibold text-zinc-100 mb-2">Luma Comply</h3>
               <p className="text-zinc-400 text-sm">
                 HIPAA medical documentation - regulatory updates, provider pain points
-              </p>
-            </div>
-            <div className="p-4 bg-zinc-800/50 rounded-lg">
-              <h3 className="font-semibold text-zinc-100 mb-2">Marina Real Estate</h3>
-              <p className="text-zinc-400 text-sm">
-                El Paso content marketing - market intel, Fort Bliss housing
               </p>
             </div>
           </div>

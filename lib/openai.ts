@@ -28,13 +28,12 @@ function getClient(): OpenAI {
  */
 function buildMorningEmailPrompt(
   findings: ResearchFinding[],
-  blogTopics: Record<ProjectName, BlogTopic[]>,
+  blogTopics: Partial<Record<ProjectName, BlogTopic[]>>,
   blogCheckResults: BlogCheckResult[]
 ): string {
   // Organize findings by project
   const sponsorbaseFindings = findings.filter(f => f.project === 'sponsorbase');
   const lumaFindings = findings.filter(f => f.project === 'luma');
-  const marinaFindings = findings.filter(f => f.project === 'marina');
 
   // Get urgent items
   const urgentFindings = findings.filter(f => f.priority === 'urgent' || f.priority === 'high');
@@ -47,7 +46,7 @@ function buildMorningEmailPrompt(
     return `${r.project.toUpperCase()} Blog (${r.blogUrl}): Found ${r.existingPosts.length} existing posts`;
   }).join('\n');
 
-  return `Format this research into a professional but conversational email digest for Edward, a solo founder running three projects.
+  return `Format this research into a professional but conversational email digest for Edward, a solo founder running two projects.
 
 RESEARCH DATA:
 
@@ -83,25 +82,12 @@ Action Items: ${f.actionItems.join('; ')}
 Sources: ${f.sources.map(s => s.url).slice(0, 3).join(', ')}
 `).join('\n---\n')}
 
-=== MARINA REAL ESTATE RESEARCH ===
-${marinaFindings.map(f => `
-Query: ${f.query}
-Priority: ${f.priority}
-Key Findings: ${f.keyFindings.join('; ')}
-Most Important: ${f.mostImportantInsight}
-Pain Points: ${f.painPoints.map(p => `"${p.quote}"${p.subreddit ? ` (r/${p.subreddit})` : ''}`).join('; ')}
-Solutions Requested: ${f.solutionRequests.join('; ')}
-Action Items: ${f.actionItems.join('; ')}
-Sources: ${f.sources.map(s => s.url).slice(0, 3).join(', ')}
-`).join('\n---\n')}
-
 === EXISTING BLOG POSTS (for duplicate checking) ===
 ${blogCheckInfo}
 
 === TRENDING BLOG TOPICS ===
-SPONSORBASE: ${blogTopics.sponsorbase.map(t => `"${t.title}" ${t.isDuplicate ? `[SKIP - similar to: ${t.existingPostTitle}]` : '[RECOMMENDED]'}`).join(', ')}
-LUMA COMPLY: ${blogTopics.luma.map(t => `"${t.title}" ${t.isDuplicate ? `[SKIP - similar to: ${t.existingPostTitle}]` : '[RECOMMENDED]'}`).join(', ')}
-MARINA: ${blogTopics.marina.map(t => `"${t.title}" ${t.isDuplicate ? `[SKIP - similar to: ${t.existingPostTitle}]` : '[RECOMMENDED]'}`).join(', ')}
+SPONSORBASE: ${(blogTopics.sponsorbase || []).map(t => `"${t.title}" ${t.isDuplicate ? `[SKIP - similar to: ${t.existingPostTitle}]` : '[RECOMMENDED]'}`).join(', ')}
+LUMA COMPLY: ${(blogTopics.luma || []).map(t => `"${t.title}" ${t.isDuplicate ? `[SKIP - similar to: ${t.existingPostTitle}]` : '[RECOMMENDED]'}`).join(', ')}
 
 ---
 
@@ -115,11 +101,7 @@ STRUCTURE:
    - Regulatory updates
    - Reddit pain points (with quotes)
    - Blog posts to write this week (with duplicate check results)
-4. MARINA REAL ESTATE section
-   - Market intel
-   - Reddit discussions
-   - Blog posts to write this week (with duplicate check results)
-5. WEEKLY BLOG CALENDAR - consolidated list of recommended posts across all 3 blogs
+4. WEEKLY BLOG CALENDAR - consolidated list of recommended posts across both blogs
 
 FORMATTING:
 - NO emojis - use proper H1 H2 H3 H4 H5 H6 and text
@@ -160,7 +142,7 @@ Return only the HTML email body content (no <html>, <head>, or <body> tags). Use
  */
 export async function formatMorningEmail(
   findings: ResearchFinding[],
-  blogTopics: Record<ProjectName, BlogTopic[]>,
+  blogTopics: Partial<Record<ProjectName, BlogTopic[]>>,
   blogCheckResults: BlogCheckResult[]
 ): Promise<{ htmlBody: string; error?: string }> {
   try {

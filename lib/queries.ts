@@ -174,57 +174,6 @@ const LUMA_MORNING_QUERIES: ResearchQuery[] = [
   },
 ];
 
-// MARINA REAL ESTATE - El Paso Content Marketing
-const MARINA_MORNING_QUERIES: ResearchQuery[] = [
-  // Market Intel
-  {
-    query: 'El Paso Texas real estate market update 2026',
-    project: 'marina',
-    category: 'market_intel',
-  },
-  {
-    query: 'Fort Bliss BAH rates 2026',
-    project: 'marina',
-    category: 'market_intel',
-  },
-  {
-    query: 'El Paso new construction homes Horizon City Eastlake',
-    project: 'marina',
-    category: 'market_intel',
-  },
-  {
-    query: 'first time home buyer El Paso down payment assistance',
-    project: 'marina',
-    category: 'market_intel',
-  },
-  {
-    query: 'First Time Home buyers incoming El Paso region 2026',
-    project: 'marina',
-    category: 'market_intel',
-  },
-
-  // Reddit Pain Points
-  {
-    query: 'site:reddit.com moving to El Paso',
-    project: 'marina',
-    category: 'reddit_pain_points',
-  },
-  {
-    query: 'site:reddit.com Fort Bliss housing advice',
-    project: 'marina',
-    category: 'reddit_pain_points',
-  },
-  {
-    query: 'site:reddit.com El Paso neighborhoods safe',
-    project: 'marina',
-    category: 'reddit_pain_points',
-  },
-  {
-    query: 'site:reddit.com PCS Fort Bliss buy or rent',
-    project: 'marina',
-    category: 'reddit_pain_points',
-  },
-];
 
 // ============================================================
 // EVENING CATCH-UP QUERIES
@@ -267,29 +216,14 @@ const LUMA_EVENING_QUERIES: ResearchQuery[] = [
   },
 ];
 
-const MARINA_EVENING_QUERIES: ResearchQuery[] = [
-  {
-    query: 'El Paso real estate market breaking news today',
-    project: 'marina',
-    category: 'urgent_news',
-    isEvening: true,
-  },
-  {
-    query: 'Fort Bliss announcement housing today',
-    project: 'marina',
-    category: 'urgent_news',
-    isEvening: true,
-  },
-];
 
 // ============================================================
 // BLOG URLS FOR DUPLICATE CHECKING
 // ============================================================
 
-export const BLOG_URLS: Record<ProjectName, string> = {
+export const BLOG_URLS: Partial<Record<ProjectName, string>> = {
   sponsorbase: 'https://blog.sponsorbase.io',
   luma: 'https://www.useluma.io/blog',
-  marina: 'https://www.marina-ramirez.com/en/blog',
 };
 
 // ============================================================
@@ -297,13 +231,11 @@ export const BLOG_URLS: Record<ProjectName, string> = {
 // Used for generating trending topic recommendations
 // ============================================================
 
-export const BLOG_TOPIC_DESCRIPTIONS: Record<ProjectName, string> = {
+export const BLOG_TOPIC_DESCRIPTIONS: Partial<Record<ProjectName, string>> = {
   sponsorbase:
     'creator economy, influencer marketing, and brand sponsorships that a SaaS blog should write about. Focus on topics with high search intent that micro-influencers (10K-150K followers) would search for',
   luma:
     'healthcare documentation, prior authorization, HIPAA compliance, and medical billing that a B2B healthcare SaaS blog should write about. Focus on topics providers and healthcare admins are searching for',
-  marina:
-    'El Paso Texas, Fort Bliss military housing, and first-time home buyers that a real estate blog should write about. Focus on local SEO opportunities',
 };
 
 // ============================================================
@@ -317,7 +249,6 @@ export function getMorningQueries(): ResearchQuery[] {
   return [
     ...SPONSORBASE_MORNING_QUERIES,
     ...LUMA_MORNING_QUERIES,
-    ...MARINA_MORNING_QUERIES,
   ];
 }
 
@@ -328,7 +259,6 @@ export function getEveningQueries(): ResearchQuery[] {
   return [
     ...SPONSORBASE_EVENING_QUERIES,
     ...LUMA_EVENING_QUERIES,
-    ...MARINA_EVENING_QUERIES,
   ];
 }
 
@@ -339,19 +269,17 @@ export function getQueriesByProject(
   project: ProjectName,
   isEvening: boolean = false
 ): ResearchQuery[] {
-  const morningQueries: Record<ProjectName, ResearchQuery[]> = {
+  const morningQueries: Partial<Record<ProjectName, ResearchQuery[]>> = {
     sponsorbase: SPONSORBASE_MORNING_QUERIES,
     luma: LUMA_MORNING_QUERIES,
-    marina: MARINA_MORNING_QUERIES,
   };
 
-  const eveningQueries: Record<ProjectName, ResearchQuery[]> = {
+  const eveningQueries: Partial<Record<ProjectName, ResearchQuery[]>> = {
     sponsorbase: SPONSORBASE_EVENING_QUERIES,
     luma: LUMA_EVENING_QUERIES,
-    marina: MARINA_EVENING_QUERIES,
   };
 
-  return isEvening ? eveningQueries[project] : morningQueries[project];
+  return isEvening ? eveningQueries[project] || [] : morningQueries[project] || [];
 }
 
 /**
