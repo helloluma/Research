@@ -19,11 +19,8 @@ curl http://localhost:3000/api/status
 # Test email configuration
 curl http://localhost:3000/api/test-email
 
-# Trigger morning digest (warning: uses API credits)
+# Trigger weekly digest (warning: uses API credits)
 curl http://localhost:3000/api/cron/morning-digest
-
-# Trigger evening catch-up
-curl http://localhost:3000/api/cron/evening-catchup
 ```
 
 ## Architecture
@@ -32,31 +29,32 @@ This is a Next.js 15 App Router application that runs automated research digests
 
 ### Data Flow
 
-1. **Cron triggers** → `app/api/cron/morning-digest/route.ts` or `evening-catchup/route.ts`
+1. **Cron triggers** → `app/api/cron/morning-digest/route.ts` (runs weekly on Mondays)
 2. **Research queries** → `lib/perplexity.ts` calls Perplexity API (sonar-pro model) with rate limiting
-3. **Blog duplicate check** → `lib/blogChecker.ts` fetches existing posts via Perplexity
-4. **Email formatting** → `lib/openai.ts` uses GPT-4o to format HTML email
-5. **Email delivery** → `lib/resend.ts` sends via Resend API
-6. **State tracking** → `lib/urgentTracker.ts` saves urgent items to Vercel KV for morning/evening deduplication
+3. **Duplicate filtering** → `lib/historyTracker.ts` checks against last 3 weeks of findings stored in `data/history.md`
+4. **Blog duplicate check** → `lib/blogChecker.ts` fetches existing posts via Perplexity
+5. **Email formatting** → Custom template in `lib/emailTemplate.ts` (no GPT-4o needed)
+6. **Email delivery** → `lib/resend.ts` sends via Resend API
+7. **History update** → New findings saved to `data/history.md` (and Vercel KV in production)
 
 ### Key Files
 
-- `lib/queries.ts` - All research queries organized by project (sponsorbase, luma, marina) and job type (morning/evening). Edit this to add/modify queries.
+- `lib/queries.ts` - All research queries organized by project (sponsorbase, luma). Edit this to add/modify queries.
+- `lib/historyTracker.ts` - Manages 3-week history in markdown file to prevent duplicate findings.
 - `lib/resend.ts` - Email configuration including sender/recipient addresses in `EMAIL_CONFIG`.
+- `data/history.md` - Stores last 3 weeks of research findings for duplicate detection.
 - `types/index.ts` - All TypeScript interfaces (`ResearchFinding`, `UrgentItem`, `BlogTopic`, etc.)
 
-### Cron Schedules (vercel.json)
+### Cron Schedule (vercel.json)
 
-Schedules are in UTC:
-- Morning: `30 12 * * *` = 12:30pm UTC = 6:30am CT
-- Evening: `0 2 * * *` = 2:00am UTC = 8:00pm CT
+Schedule is in UTC:
+- Weekly Monday: `30 13 * * 1` = 1:30pm UTC = 6:30am MST
 
 ### Projects Tracked
 
-Three projects with different query types:
+Two projects with different query types:
 - **sponsorbase**: Creator sponsorship SaaS - competitor intel, Reddit pain points
 - **luma**: HIPAA medical documentation - regulatory updates, provider pain points
-- **marina**: El Paso real estate - market intel, Fort Bliss housing
 
 ### Error Handling Strategy
 

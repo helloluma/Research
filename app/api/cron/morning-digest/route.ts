@@ -1,12 +1,13 @@
 /**
- * Morning Digest Cron Job
- * Runs at 6:30am MST (13:30pm UTC)
+ * Weekly Digest Cron Job
+ * Runs every Monday at 6:30am MST (13:30pm UTC)
  *
  * Full research digest including:
  * - All project queries
  * - Reddit pain points with quotes
  * - Trending blog topics with duplicate checking
  * - Urgent items highlighted at top
+ * - Duplicate filtering against last 3 weeks of history
  *
  * Uses custom email template (no ChatGPT - saves ~$0.50/run)
  */
@@ -20,6 +21,7 @@ import {
   saveMorningUrgentItems,
   extractUrgentItems,
 } from '@/lib/urgentTracker';
+import { filterDuplicates, addToHistory } from '@/lib/historyTracker';
 import { getMorningQueries } from '@/lib/queries';
 import { BlogTopic, ProjectName, CronJobResult } from '@/types';
 
@@ -34,7 +36,7 @@ export async function GET(request: Request) {
   const errors: string[] = [];
   let emailSent = false;
 
-  console.log('=== Starting Morning Digest Cron Job ===');
+  console.log('=== Starting Weekly Research Digest (Monday) ===');
   console.log(`Time: ${new Date().toISOString()}`);
 
   // Verify cron secret if configured
@@ -60,8 +62,13 @@ export async function GET(request: Request) {
       console.warn(`Query errors: ${queryErrors.length}`);
     }
 
-    // STEP 2: Get trending blog topics
-    console.log('\n--- Step 2: Getting Trending Blog Topics ---');
+    // STEP 2: Filter duplicates from last 3 weeks
+    console.log('\n--- Step 2: Filtering Duplicates from History ---');
+    const { unique: uniqueFindings, duplicates } = await filterDuplicates(findings);
+    console.log(`Original: ${findings.length}, Unique: ${uniqueFindings.length}, Duplicates filtered: ${duplicates.length}`);
+
+    // STEP 3: Get trending blog topics
+    console.log('\n--- Step 3: Getting Trending Blog Topics ---');
     const projects: ProjectName[] = ['sponsorbase', 'luma'];
     const trendingTopics: Partial<Record<ProjectName, string[]>> = {
       sponsorbase: [],
@@ -82,8 +89,8 @@ export async function GET(request: Request) {
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
 
-    // STEP 3: Check existing blogs for duplicates
-    console.log('\n--- Step 3: Checking Existing Blogs ---');
+    // STEP 4: Check existing blogs for duplicates
+    console.log('\n--- Step 4: Checking Existing Blogs ---');
     const blogCheckResults = await checkAllBlogs();
 
     for (const result of blogCheckResults) {
@@ -96,8 +103,8 @@ export async function GET(request: Request) {
       }
     }
 
-    // STEP 4: Check topics for duplicates
-    console.log('\n--- Step 4: Checking for Duplicate Topics ---');
+    // STEP 5: Check topics for duplicates
+    console.log('\n--- Step 5: Checking for Duplicate Topics ---');
     const blogTopics: Partial<Record<ProjectName, BlogTopic[]>> = {
       sponsorbase: checkTopicsForDuplicates(
         trendingTopics.sponsorbase || [],
@@ -116,9 +123,9 @@ export async function GET(request: Request) {
       .filter(t => t.isDuplicate).length;
     console.log(`Found ${duplicateCount} potential duplicate topics`);
 
-    // STEP 5: Extract and save urgent items
-    console.log('\n--- Step 5: Extracting Urgent Items ---');
-    const urgentItems = extractUrgentItems(findings);
+    // STEP 6: Extract and save urgent items
+    console.log('\n--- Step 6: Extracting Urgent Items ---');
+    const urgentItems = extractUrgentItems(uniqueFindings);
     console.log(`Found ${urgentItems.length} urgent/high priority items`);
 
     try {
@@ -130,22 +137,33 @@ export async function GET(request: Request) {
       console.warn(errorMsg);
     }
 
-    // STEP 6: Generate email with custom template (no ChatGPT!)
-    console.log('\n--- Step 6: Generating Email (Custom Template) ---');
+    // STEP 7: Generate email with custom template (no ChatGPT!)
+    console.log('\n--- Step 7: Generating Email (Custom Template) ---');
     const htmlBody = generateMorningDigestEmail(
-      findings,
+      uniqueFindings,
       blogTopics,
       blogCheckResults
     );
     console.log('Email generated successfully using custom template');
 
-    // STEP 7: Send email via Resend
-    console.log('\n--- Step 7: Sending Email ---');
+    // STEP 8: Send email via Resend
+    console.log('\n--- Step 8: Sending Email ---');
     const sendResult = await sendMorningDigest(htmlBody);
 
     if (sendResult.success) {
       emailSent = true;
       console.log(`Email sent successfully. ID: ${sendResult.messageId}`);
+
+      // STEP 9: Save findings to history for future duplicate checking
+      console.log('\n--- Step 9: Updating History ---');
+      try {
+        await addToHistory(uniqueFindings);
+        console.log(`Added ${uniqueFindings.length} findings to history`);
+      } catch (historyError) {
+        const errorMsg = `Failed to save history: ${historyError instanceof Error ? historyError.message : 'Unknown'}`;
+        errors.push(errorMsg);
+        console.warn(errorMsg);
+      }
     } else {
       const errorMsg = `Failed to send email: ${sendResult.error}`;
       errors.push(errorMsg);
@@ -154,9 +172,11 @@ export async function GET(request: Request) {
 
     // Calculate duration
     const duration = Date.now() - startTime;
-    console.log(`\n=== Morning Digest Complete ===`);
+    console.log(`\n=== Weekly Digest Complete ===`);
     console.log(`Duration: ${(duration / 1000).toFixed(1)}s`);
     console.log(`Queries processed: ${findings.length}`);
+    console.log(`Duplicates filtered: ${duplicates.length}`);
+    console.log(`Unique findings: ${uniqueFindings.length}`);
     console.log(`Urgent items: ${urgentItems.length}`);
     console.log(`Errors: ${errors.length}`);
     console.log(`Email sent: ${emailSent}`);
@@ -167,10 +187,10 @@ export async function GET(request: Request) {
     }
 
     const result: CronJobResult = {
-      success: emailSent && errors.length < findings.length / 2,
+      success: emailSent && errors.length < uniqueFindings.length / 2,
       jobType: 'morning',
       timestamp: new Date().toISOString(),
-      queriesProcessed: findings.length,
+      queriesProcessed: uniqueFindings.length,
       urgentItemsFound: urgentItems.length,
       emailSent,
       errors,
